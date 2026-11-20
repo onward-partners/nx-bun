@@ -1,6 +1,6 @@
 {
   "name": "@onward-partners/nx-bun",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Nx plugin that runs, builds, tests and formats JS/TS projects with Bun",
   "main": "src/index.js",
   "types": "src/index.d.ts",
