@@ -25,6 +25,11 @@
       "type": "string",
       "description": "Override the compiled file to start when it cannot be derived from the build target."
     },
+    "outputPath": {
+      "type": "string",
+      "description": "Directory a `main` script writes to. Not used at run time: it only lets `outputs: [\"{options.outputPath}\"]` (set by the init generator in `targetDefaults`) cache the script's output.",
+      "x-completion-type": "directory"
+    },
     "cwd": {
       "type": "string",
       "description": "Working directory. Defaults to the workspace root."

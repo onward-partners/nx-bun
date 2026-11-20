@@ -231,3 +231,16 @@ describe('project', () => {
     expect(tree.read('libs/old/bunfig.toml', 'utf-8')).toBe('# mine\n');
   });
 });
+
+describe('init targetDefaults', () => {
+  test('adds cache inputs and outputs for script run targets once', async () => {
+    const tree = createTreeWithEmptyWorkspace();
+    await initGenerator(tree, { skipFormat: true });
+    const key = '@onward-partners/nx-bun:run';
+    const before = readNxJson(tree)!.targetDefaults![key];
+    expect(before.outputs).toEqual(['{options.outputPath}']);
+    expect(before.inputs).toContainEqual({ runtime: 'bun --version' });
+    await initGenerator(tree, { skipFormat: true });
+    expect(readNxJson(tree)!.targetDefaults![key]).toEqual(before);
+  });
+});

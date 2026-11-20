@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createNodesV2 } from './plugin';
+import { createNodesV2, globToRegExp } from './plugin';
 
 let ws: string;
 beforeEach(() => {
@@ -87,7 +87,7 @@ describe('createNodesV2', () => {
     });
     expect(p.targets['bun-prune-lockfile']).toBeUndefined();
     expect(p.targets['nx-release-publish']).toMatchObject({
-      executor: '@nx/js:release-publish',
+      executor: '@onward-partners/nx-bun:release-publish',
       options: { packageRoot: 'dist/libs/pub' },
     });
     expect(p.targets['bun-start'].options.buildTarget).toBe(
@@ -181,6 +181,76 @@ describe('createNodesV2', () => {
       expect(JSON.stringify(p.targets['bun-build'].inputs)).not.toContain(
         'typescript',
       );
+    });
+  });
+
+  describe('opting out', () => {
+    async function app(options: Record<string, unknown>, root = 'apps/a') {
+      write(`${root}/bunfig.toml`);
+      write(`${root}/package.json`, JSON.stringify({ name: 'a', private: true }));
+      write(`${root}/src/main.ts`);
+      write(`${root}/src/main.test.ts`);
+      return (await infer([`${root}/bunfig.toml`], options))[root];
+    }
+
+    test('a target name of false skips that target', async () => {
+      const p = await app({ fmtTargetName: false, fmtCheckTargetName: false });
+      expect(Object.keys(p.targets)).not.toContain('bun-fmt');
+      expect(Object.keys(p.targets)).not.toContain('bun-fmt-check');
+      expect(p.targets['bun-build']).toBeDefined();
+    });
+
+    test('without a build target, start and prune are skipped', async () => {
+      const p = await app({ buildTargetName: false });
+      expect(Object.keys(p.targets).sort()).toEqual(
+        ['bun-fmt', 'bun-fmt-check', 'bun-serve', 'bun-test'].sort(),
+      );
+    });
+
+    test('release publish does not depend on a skipped build', async () => {
+      write('libs/pub/bunfig.toml');
+      write('libs/pub/package.json', JSON.stringify({ name: 'pub' }));
+      write('libs/pub/src/index.ts');
+      const { 'libs/pub': p } = await infer(['libs/pub/bunfig.toml'], {
+        buildTargetName: false,
+      });
+      expect(p.targets['nx-release-publish'].dependsOn).toEqual([
+        '^nx-release-publish',
+      ]);
+    });
+
+    test('exclude drops matching project roots', async () => {
+      expect(await app({ exclude: ['apps/*'] })).toBeUndefined();
+    });
+
+    test('include keeps only matching project roots', async () => {
+      expect(await app({ include: ['libs/**'] })).toBeUndefined();
+      expect(await app({ include: ['apps/**'] }, 'apps/b')).toBeDefined();
+    });
+
+    test('a root bunfig.toml is not a project', async () => {
+      write('bunfig.toml');
+      write('package.json', JSON.stringify({ name: 'root', private: true }));
+      write('src/main.test.ts');
+      expect(await infer(['bunfig.toml'])).toEqual({});
+    });
+
+    test('rootProject: true makes the root a project', async () => {
+      write('bunfig.toml');
+      write('package.json', JSON.stringify({ name: 'root', private: true }));
+      const result = await infer(['bunfig.toml'], { rootProject: true });
+      expect(result['.']).toBeDefined();
+    });
+  });
+
+  describe('globToRegExp', () => {
+    test('* stays in one segment, ** crosses segments', () => {
+      expect(globToRegExp('apps/*').test('apps/a')).toBe(true);
+      expect(globToRegExp('apps/*').test('apps/a/b')).toBe(false);
+      expect(globToRegExp('apps/**').test('apps/a/b')).toBe(true);
+      expect(globToRegExp('**/cli').test('cli')).toBe(true);
+      expect(globToRegExp('**/cli').test('tools/x/cli')).toBe(true);
+      expect(globToRegExp('libs/a.b').test('libs/aXb')).toBe(false);
     });
   });
 

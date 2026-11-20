@@ -40,7 +40,7 @@ nx run api:bun-start      # build, then run the compiled output
 
 ## Inferred targets
 
-A project is a Bun project when `bunfig.toml` sits next to a `package.json` or `project.json`.
+A project is a Bun project when `bunfig.toml` sits next to a `package.json` or `project.json`. A `bunfig.toml` in the workspace root is ignored (it usually only holds install settings such as the registry scope); set `rootProject: true` if the root really is a Bun project.
 
 | Target                     | Created when                                   | What it does                                                                                  |
 | -------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------- |
@@ -50,9 +50,18 @@ A project is a Bun project when `bunfig.toml` sits next to a `package.json` or `
 | `bun-serve`                | entry found                                    | runs the **source** with `bun --watch` (continuous)                                           |
 | `bun-start`                | entry found                                    | builds, then runs the **compiled output**                                                     |
 | `bun-prune-lockfile`       | private project with entry                     | `package.json` + `bun.lock` with only the needed packages                                     |
-| `nx-release-publish`       | non-private project with entry                 | `@nx/js:release-publish` on `dist/<root>` (uses `bun publish`)                                |
+| `nx-release-publish`       | non-private project with entry                 | `bun publish` on `dist/<root>` via this plugin's `release-publish` executor                   |
 
-Target names can be changed with plugin options (`buildTargetName`, `testTargetName`, `serveTargetName`, `startTargetName`, `fmtTargetName`, `fmtCheckTargetName`, `pruneLockfileTargetName`). `releasePublish: false` disables the release target.
+Plugin options:
+
+| Option                                                                                                                                   | Effect                                                                                                    |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `buildTargetName`, `testTargetName`, `serveTargetName`, `startTargetName`, `fmtTargetName`, `fmtCheckTargetName`, `pruneLockfileTargetName` | Rename a target, or set it to `false` to not infer it (for example `fmtTargetName: false` if you use Prettier). |
+| `releasePublish: false`                                                                                                                  | Do not infer `nx-release-publish`.                                                                        |
+| `include`, `exclude`                                                                                                                     | Globs (`*`, `**`, `?`) on project roots. Only matching projects (`include`) / never matching ones (`exclude`) get targets. |
+| `rootProject`                                                                                                                            | Also infer targets for a `bunfig.toml` in the workspace root. Default `false`.                            |
+
+`bun-start` and `bun-prune-lockfile` need the build target, so they are skipped when `buildTargetName` is `false`. A project that already defines its own `build` can set `buildTargetName: false` (and the other names) or be listed in `exclude`.
 
 ```jsonc
 // nx.json
@@ -69,10 +78,34 @@ Target names can be changed with plugin options (`buildTargetName`, `testTargetN
 ## Executors
 
 - **`run`** – `main` runs TypeScript/JavaScript source directly; `buildTarget` runs the compiled output of a build target (`runtime: bun | node`; `--compile` binaries start directly). Also `watch`, `hot`, `args`, `env`.
-- **`build`** – `entryPoints`, `outputPath` / `outfile` (`outfile` wins), `target`, `format`, `minify`, `sourcemap`, `splitting`, `compile`, `packages`, `external`, `define`, `dts`, `generatePackageJson`, `assets`.
+- **`build`** – `entryPoints`, `outputPath` / `outfile` (`outfile` wins), `target`, `format`, `minify`, `sourcemap`, `splitting`, `compile`, `packages`, `external`, `define`, `dts`, `generatePackageJson`, `assets`, `clean` (empty the output first) and `plugins` (see below).
 - **`test`** – `testFiles`, `timeout`, `bail`, `coverage`, `coverageReporter`, `updateSnapshots`, `watch`, `testNamePattern`, `reporter`, `passWithNoTests`, `concurrent`, `randomize`, `only`.
 - **`fmt`** – `files`, `check`, `printWidth`, `useTabs`, `noSemi`, `singleQuote`, `changed`.
+- **`release-publish`** – `bun publish` for `nx release`. `@nx/js:release-publish` passes `--json`, which Bun rejects, so the inferred `nx-release-publish` target uses this executor. Options: `packageRoot`, `registry`, `tag`, `access`, `otp`, `dryRun`, `tolerateRepublish` (default `true`). Bun asks for credentials even with `dryRun`.
 - **`prune-lockfile`** – Bun replacement for `@nx/js:prune-lockfile`, which does not support Bun. Pins dependencies to the versions Nx read from the workspace `bun.lock`, then runs `bun install --lockfile-only`. Useful for Docker builds.
+
+### Bun plugins
+
+`bun build` has no plugin flag, so `plugins` runs the build through `Bun.build()`. List module paths whose default export is a `BunPlugin`, an array of them, or a function returning either (raw `args` are not supported in this mode):
+
+```jsonc
+"build": {
+  "executor": "@onward-partners/nx-bun:build",
+  "options": { "entryPoints": ["apps/cli/src/main.ts"], "outputPath": "dist/apps/cli", "clean": true, "plugins": ["apps/cli/stub-plugin.ts"] }
+}
+```
+
+### Caching script targets
+
+A `run` target with `main` (a build script) has no inferred cache config. `nx g @onward-partners/nx-bun:init` adds a `targetDefaults` entry for `@onward-partners/nx-bun:run` with the Bun version and `NODE_ENV` as inputs and `{options.outputPath}` as outputs. Set `cache: true` and `outputPath` on the target:
+
+```jsonc
+"build-script": {
+  "executor": "@onward-partners/nx-bun:run",
+  "cache": true,
+  "options": { "main": "apps/cli/build.ts", "outputPath": "dist/apps/cli" }
+}
+```
 
 Every executor accepts `env` and `args` (raw flags). Set `BUN_BIN` to use a specific Bun binary.
 

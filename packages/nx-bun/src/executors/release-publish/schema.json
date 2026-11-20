@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Bun release-publish executor",
+  "description": "Publish a built package with `bun publish`. Replacement for `@nx/js:release-publish`, which passes `--json` to Bun.",
+  "type": "object",
+  "properties": {
+    "packageRoot": {
+      "type": "string",
+      "description": "Directory of the built package, relative to the workspace root. Defaults to the project root.",
+      "x-completion-type": "directory"
+    },
+    "registry": {
+      "type": "string",
+      "description": "Registry URL (`--registry`)."
+    },
+    "tag": {
+      "type": "string",
+      "description": "Dist-tag (`--tag`)."
+    },
+    "access": {
+      "type": "string",
+      "enum": ["public", "restricted"],
+      "description": "Package access (`--access`)."
+    },
+    "otp": {
+      "type": "string",
+      "description": "One-time password (`--otp`)."
+    },
+    "dryRun": {
+      "type": "boolean",
+      "default": false,
+      "description": "Do not publish (`--dry-run`)."
+    },
+    "tolerateRepublish": {
+      "type": "boolean",
+      "default": true,
+      "description": "Do not fail when the version is already published (`--tolerate-republish`)."
+    },
+    "firstRelease": {
+      "type": "boolean",
+      "description": "Passed by `nx release`. Accepted and ignored."
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "args": {
+      "type": "array",
+      "description": "Additional raw flags for `bun publish`.",
+      "items": { "type": "string" }
+    }
+  }
+}

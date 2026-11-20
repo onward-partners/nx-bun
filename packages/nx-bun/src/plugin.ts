@@ -6,16 +6,25 @@ import {
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 
+/** A target name, or `false` to not infer that target. */
+export type TargetName = string | false;
+
 export interface BunPluginOptions {
-  testTargetName?: string;
-  fmtTargetName?: string;
-  fmtCheckTargetName?: string;
-  buildTargetName?: string;
-  serveTargetName?: string;
-  startTargetName?: string;
-  pruneLockfileTargetName?: string;
-  /** Infer `nx-release-publish` (via @nx/js:release-publish) for non-private projects. Default true. */
+  testTargetName?: TargetName;
+  fmtTargetName?: TargetName;
+  fmtCheckTargetName?: TargetName;
+  buildTargetName?: TargetName;
+  serveTargetName?: TargetName;
+  startTargetName?: TargetName;
+  pruneLockfileTargetName?: TargetName;
+  /** Infer `nx-release-publish` (runs `bun publish`) for non-private projects. Default true. */
   releasePublish?: boolean;
+  /** Only infer targets for projects whose root matches one of these globs. */
+  include?: string[];
+  /** Never infer targets for projects whose root matches one of these globs. */
+  exclude?: string[];
+  /** Also treat a `bunfig.toml` in the workspace root as a project. Default false. */
+  rootProject?: boolean;
 }
 
 const PLUGIN = '@onward-partners/nx-bun';
@@ -35,7 +44,8 @@ const NODE_ENV = { env: 'NODE_ENV' };
 
 /**
  * A directory is a Bun project when it holds a `bunfig.toml` next to a
- * `package.json` or `project.json`.
+ * `package.json` or `project.json`. The workspace root is skipped unless
+ * `rootProject` is set: a root `bunfig.toml` usually only configures installs.
  */
 export const createNodesV2: CreateNodesV2<BunPluginOptions> = [
   '**/bunfig.toml',
@@ -43,18 +53,22 @@ export const createNodesV2: CreateNodesV2<BunPluginOptions> = [
     createNodesFromFiles(
       file => {
         const root = dirname(file);
+        if (root === '.' && !options?.rootProject) return {};
+        if (!isSelected(root, options)) return {};
         const abs = (p: string) => join(context.workspaceRoot, root, p);
         const hasPkg = existsSync(abs('package.json'));
         if (!hasPkg && !existsSync(abs('project.json'))) return {};
 
+        const name = (configured: TargetName | undefined, fallback: string) =>
+          configured === undefined ? fallback : configured;
         const names = {
-          test: options?.testTargetName ?? 'bun-test',
-          fmt: options?.fmtTargetName ?? 'bun-fmt',
-          fmtCheck: options?.fmtCheckTargetName ?? 'bun-fmt-check',
-          build: options?.buildTargetName ?? 'bun-build',
-          serve: options?.serveTargetName ?? 'bun-serve',
-          start: options?.startTargetName ?? 'bun-start',
-          prune: options?.pruneLockfileTargetName ?? 'bun-prune-lockfile',
+          test: name(options?.testTargetName, 'bun-test'),
+          fmt: name(options?.fmtTargetName, 'bun-fmt'),
+          fmtCheck: name(options?.fmtCheckTargetName, 'bun-fmt-check'),
+          build: name(options?.buildTargetName, 'bun-build'),
+          serve: name(options?.serveTargetName, 'bun-serve'),
+          start: name(options?.startTargetName, 'bun-start'),
+          prune: name(options?.pruneLockfileTargetName, 'bun-prune-lockfile'),
         };
         const pkg = hasPkg ? readJson(abs('package.json')) : undefined;
         const projectName = readProjectName(abs, root);
@@ -65,7 +79,7 @@ export const createNodesV2: CreateNodesV2<BunPluginOptions> = [
           description,
         });
 
-        if (hasTestFiles(abs('.'))) {
+        if (names.test && hasTestFiles(abs('.'))) {
           targets[names.test] = {
             executor: `${PLUGIN}:test`,
             cache: true,
@@ -76,19 +90,23 @@ export const createNodesV2: CreateNodesV2<BunPluginOptions> = [
           };
         }
 
-        targets[names.fmt] = {
-          executor: `${PLUGIN}:fmt`,
-          cache: false,
-          options: {},
-          metadata: meta('Format with bun fmt'),
-        };
-        targets[names.fmtCheck] = {
-          executor: `${PLUGIN}:fmt`,
-          cache: true,
-          inputs: ['default', BUN_VERSION],
-          options: { check: true },
-          metadata: meta('Check formatting with bun fmt --check'),
-        };
+        if (names.fmt) {
+          targets[names.fmt] = {
+            executor: `${PLUGIN}:fmt`,
+            cache: false,
+            options: {},
+            metadata: meta('Format with bun fmt'),
+          };
+        }
+        if (names.fmtCheck) {
+          targets[names.fmtCheck] = {
+            executor: `${PLUGIN}:fmt`,
+            cache: true,
+            inputs: ['default', BUN_VERSION],
+            options: { check: true },
+            metadata: meta('Check formatting with bun fmt --check'),
+          };
+        }
 
         const entry = ENTRY_CANDIDATES.find(e => existsSync(abs(e)));
         if (entry) {
@@ -112,32 +130,38 @@ export const createNodesV2: CreateNodesV2<BunPluginOptions> = [
           ];
           if (buildOptions.dts)
             buildInputs.push({ externalDependencies: ['typescript'] });
-          targets[names.build] = {
-            executor: `${PLUGIN}:build`,
-            cache: true,
-            inputs: buildInputs,
-            outputs: ['{options.outputPath}', '{options.outfile}'],
-            options: buildOptions,
-            metadata: meta('Bundle with bun build'),
-          };
+          if (names.build) {
+            targets[names.build] = {
+              executor: `${PLUGIN}:build`,
+              cache: true,
+              inputs: buildInputs,
+              outputs: ['{options.outputPath}', '{options.outfile}'],
+              options: buildOptions,
+              metadata: meta('Bundle with bun build'),
+            };
+          }
 
           // Run the TypeScript source directly (watch mode, no build step).
-          targets[names.serve] = {
-            executor: `${PLUGIN}:run`,
-            continuous: true,
-            cache: false,
-            options: { main: `${root}/${entry}`, watch: true },
-            metadata: meta('Run source with bun --watch'),
-          };
-          // Run the compiled output; builds first.
-          targets[names.start] = {
-            executor: `${PLUGIN}:run`,
-            cache: false,
-            dependsOn: [names.build],
-            options: { buildTarget: `${projectName}:${names.build}` },
-            metadata: meta('Build, then run compiled output'),
-          };
-          if (!isPublishable) {
+          if (names.serve) {
+            targets[names.serve] = {
+              executor: `${PLUGIN}:run`,
+              continuous: true,
+              cache: false,
+              options: { main: `${root}/${entry}`, watch: true },
+              metadata: meta('Run source with bun --watch'),
+            };
+          }
+          // Run the compiled output; builds first. Needs the build target.
+          if (names.start && names.build) {
+            targets[names.start] = {
+              executor: `${PLUGIN}:run`,
+              cache: false,
+              dependsOn: [names.build],
+              options: { buildTarget: `${projectName}:${names.build}` },
+              metadata: meta('Build, then run compiled output'),
+            };
+          }
+          if (!isPublishable && names.prune && names.build) {
             targets[names.prune] = {
               executor: `${PLUGIN}:prune-lockfile`,
               cache: true,
@@ -159,8 +183,13 @@ export const createNodesV2: CreateNodesV2<BunPluginOptions> = [
 
           if (isPublishable && options?.releasePublish !== false) {
             targets['nx-release-publish'] = {
-              executor: '@nx/js:release-publish',
-              dependsOn: [names.build, '^nx-release-publish'],
+              // @nx/js:release-publish passes --json to `bun publish`, which
+              // Bun rejects, so the plugin ships its own executor.
+              executor: `${PLUGIN}:release-publish`,
+              dependsOn: [
+                ...(names.build ? [names.build] : []),
+                '^nx-release-publish',
+              ],
               options: { packageRoot: `dist/${root}` },
             };
           }
@@ -173,6 +202,38 @@ export const createNodesV2: CreateNodesV2<BunPluginOptions> = [
       context,
     ),
 ];
+
+/** Convert a glob (`*`, `**`, `?`) to a RegExp matching a whole path. */
+export function globToRegExp(glob: string): RegExp {
+  const g = glob
+    .replace(/\\/g, '/')
+    .replace(/^\.\//, '')
+    .replace(/\/+$/, '');
+  let re = '';
+  for (let i = 0; i < g.length; i++) {
+    const c = g[i];
+    if (c === '*') {
+      if (g[i + 1] === '*') {
+        i++;
+        if (g[i + 1] === '/') {
+          i++;
+          re += '(?:.*/)?';
+        } else re += '.*';
+      } else re += '[^/]*';
+    } else if (c === '?') re += '[^/]';
+    else re += c.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+  }
+  return new RegExp(`^${re}$`);
+}
+
+/** Apply the `include` / `exclude` plugin options to a project root. */
+export function isSelected(root: string, options?: BunPluginOptions): boolean {
+  const matches = (globs: string[]) =>
+    globs.some(g => globToRegExp(g).test(root));
+  if (options?.include?.length && !matches(options.include)) return false;
+  if (options?.exclude?.length && matches(options.exclude)) return false;
+  return true;
+}
 
 function readJson(path: string): Record<string, any> | undefined {
   try {

@@ -17,6 +17,8 @@ export interface RunExecutorOptions {
   runtime?: 'bun' | 'node';
   /** Overrides the file derived from the build target. */
   outputFile?: string;
+  /** Output folder of a `main` script; only used for cache `outputs`. */
+  outputPath?: string;
   cwd?: string;
   watch?: boolean;
   hot?: boolean;

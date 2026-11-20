@@ -30,6 +30,20 @@ export async function initGenerator(
   if (!registered) plugins.push({ plugin: PLUGIN_NAME });
   nxJson.plugins = plugins;
 
+  // Script targets (`run` with `main`) are not inferred, so they would have no
+  // cache inputs or outputs. `targetDefaults` keyed by executor applies to every
+  // such target; caching itself stays opt-in (`cache: true`) per target.
+  const targetDefaults = (nxJson.targetDefaults ??= {});
+  targetDefaults[`${PLUGIN_NAME}:run`] ??= {
+    inputs: [
+      'default',
+      '^default',
+      { runtime: 'bun --version' },
+      { env: 'NODE_ENV' },
+    ],
+    outputs: ['{options.outputPath}'],
+  };
+
   if (options.setPackageManager) {
     nxJson.cli = { ...nxJson.cli, packageManager: 'bun' };
   }

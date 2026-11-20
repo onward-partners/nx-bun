@@ -59,6 +59,17 @@
       "description": "Compile-time constants, e.g. `process.env.NODE_ENV=\"production\"`.",
       "items": { "type": "string" }
     },
+    "plugins": {
+      "type": "array",
+      "description": "Bun plugins: module paths (relative to the workspace root) whose default export is a BunPlugin, an array of them, or a function returning either. Switches the build to `Bun.build()` since `bun build` has no plugin flag; `args` is not supported then.",
+      "items": { "type": "string" },
+      "x-completion-type": "file"
+    },
+    "clean": {
+      "type": "boolean",
+      "default": false,
+      "description": "Delete `outputPath` (or `outfile`) before building. Must be inside the workspace."
+    },
     "generatePackageJson": {
       "type": "boolean",
       "default": false,

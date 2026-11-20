@@ -3,10 +3,19 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  mkdtempSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from 'node:fs';
-import { dirname, isAbsolute, join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { basename, dirname, isAbsolute, join, relative } from 'node:path';
+import {
+  BUILD_CONFIG_ENV,
+  BUILD_SCRIPT,
+  type BunBuildApiConfig,
+  defineToObject,
+} from '../../utils/bun-build-api';
 import {
   collectNpmDependencies,
   filterDependencies,
@@ -27,6 +36,15 @@ export interface BuildExecutorOptions {
   packages?: 'bundle' | 'external';
   external?: string[];
   define?: string[];
+  /**
+   * Bun plugins for `Bun.build()`: paths to modules (relative to the workspace
+   * root or cwd) whose default export is a BunPlugin, an array of them, or a
+   * function returning either. `bun build` has no plugin flag, so the build
+   * then runs through the JavaScript API; `args` is not supported in that mode.
+   */
+  plugins?: string[];
+  /** Empty the output (`outputPath`, or the `outfile`) before building. */
+  clean?: boolean;
   /** Write a package.json (without dev tooling) next to the output. */
   generatePackageJson?: boolean;
   /** Emit .d.ts files with tsc next to the output. */
@@ -61,19 +79,11 @@ export default async function buildExecutor(
     throw new Error('Either `outputPath` or `outfile` is required.');
   }
   const cwd = resolveCwd(context, options.cwd, 'workspace');
-  const args = [
-    'build',
-    ...options.entryPoints,
-    // `outfile` wins over `outputPath` so configurations can switch to a single file.
-    ...toFlags(
-      (options.outfile
-        ? { ...options, outputPath: undefined }
-        : options) as unknown as Record<string, unknown>,
-      FLAGS,
-    ),
-    ...(options.args ?? []),
-  ];
-  const bundle = await runBun(args, { cwd, env: options.env });
+  if (options.clean) clean(options, context.root);
+
+  const bundle = options.plugins?.length
+    ? await buildWithPlugins(options, cwd)
+    : await buildWithCli(options, cwd);
   if (!bundle.success) return { success: false };
 
   const outDir = options.outputPath
@@ -89,6 +99,77 @@ export default async function buildExecutor(
 }
 
 const abs = (root: string, p: string) => (isAbsolute(p) ? p : join(root, p));
+
+function clean(options: BuildExecutorOptions, root: string): void {
+  // `outfile` wins over `outputPath`, as in the build itself.
+  const target = options.outfile ?? options.outputPath;
+  const path = abs(root, target as string);
+  const rel = relative(root, path);
+  if (!rel || rel.startsWith('..') || isAbsolute(rel)) {
+    throw new Error(
+      `Refusing to clean ${path}: it must be inside the workspace and not its root.`,
+    );
+  }
+  rmSync(path, { recursive: true, force: true });
+}
+
+function buildWithCli(options: BuildExecutorOptions, cwd: string) {
+  const args = [
+    'build',
+    ...options.entryPoints,
+    // `outfile` wins over `outputPath` so configurations can switch to a single file.
+    ...toFlags(
+      (options.outfile
+        ? { ...options, outputPath: undefined }
+        : options) as unknown as Record<string, unknown>,
+      FLAGS,
+    ),
+    ...(options.args ?? []),
+  ];
+  return runBun(args, { cwd, env: options.env });
+}
+
+function buildWithPlugins(options: BuildExecutorOptions, cwd: string) {
+  if (options.args?.length) {
+    throw new Error(
+      '`args` cannot be combined with `plugins`: raw CLI flags do not apply to Bun.build(). Use the typed options.',
+    );
+  }
+  const config: Record<string, unknown> = {
+    entrypoints: options.entryPoints,
+    target: options.target,
+    format: options.format,
+    minify: options.minify,
+    sourcemap: options.sourcemap,
+    splitting: options.splitting,
+    packages: options.packages,
+    external: options.external,
+    define: options.define ? defineToObject(options.define) : undefined,
+  };
+  if (options.outfile) {
+    // Bun.build() has no `outfile`: write into its folder under that name.
+    const file = abs(cwd, options.outfile);
+    config.outdir = dirname(file);
+    config.naming = basename(file);
+  } else {
+    config.outdir = options.outputPath;
+  }
+  if (options.compile) config.compile = true;
+  const payload: BunBuildApiConfig = {
+    plugins: options.plugins!.map(p => abs(cwd, p)),
+    config,
+  };
+  console.log(`> bun build (Bun.build API, ${payload.plugins.length} plugin(s))`);
+  // A temp file, not `bun -e`: the script spans lines, which a Windows shell
+  // fallback would mangle.
+  const dir = mkdtempSync(join(tmpdir(), 'nx-bun-build-'));
+  const script = join(dir, 'build.mjs');
+  writeFileSync(script, BUILD_SCRIPT);
+  return runBun(['run', script], {
+    cwd,
+    env: { ...options.env, [BUILD_CONFIG_ENV]: JSON.stringify(payload) },
+  }).finally(() => rmSync(dir, { recursive: true, force: true }));
+}
 
 async function emitDeclarations(
   options: BuildExecutorOptions,
