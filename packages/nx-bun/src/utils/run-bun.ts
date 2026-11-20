@@ -1,5 +1,6 @@
 import type { ExecutorContext } from '@nx/devkit';
 import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
+import { realpathSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 
 export interface RunBunOptions {
@@ -29,6 +30,25 @@ export function resolveCwd(
     return root ? join(context.root, root) : context.root;
   }
   return context.root;
+}
+
+/**
+ * On Windows, expand 8.3 short names (C:\Users\RUNNER~1, C:\Users\FIRSTN~1)
+ * to the long form. Bun gives `import.meta.main` as `false` when the working
+ * directory is a short path, so a project that checks it prints nothing.
+ * Other platforms are left alone: resolving symlinks there could change what
+ * users see as their workspace.
+ */
+export function normalizeCwd(
+  cwd: string,
+  platform: NodeJS.Platform = process.platform,
+): string {
+  if (platform !== 'win32') return cwd;
+  try {
+    return realpathSync.native(cwd);
+  } catch {
+    return cwd;
+  }
 }
 
 /**
@@ -83,7 +103,7 @@ export function runProcess(
     let settled = false;
     const start = (shell: boolean) => {
       const child = spawn(command, args, {
-        cwd,
+        cwd: normalizeCwd(cwd),
         env: { ...process.env, FORCE_COLOR: 'true', ...env },
         stdio: 'inherit',
         windowsHide: true,
