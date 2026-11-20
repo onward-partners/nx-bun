@@ -1,0 +1,50 @@
+name: Release
+
+# Publishes @onward-partners/nx-bun to GitHub Packages when a version tag is
+# pushed. Bump "version" in packages/nx-bun/package.json first, then:
+#   git tag v<version> && git push origin v<version>
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          scope: '@onward-partners'
+
+      - name: Tag must match the package version
+        run: |
+          version=$(node -p "require('./packages/nx-bun/package.json').version")
+          if [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match package version v${version}" >&2
+            exit 1
+          fi
+
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run build
+      - run: bun run test
+      - name: E2E (fresh Nx workspace, real bun)
+        run: node e2e/run-e2e.mjs
+
+      - name: Publish to GitHub Packages
+        working-directory: packages/nx-bun/dist
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

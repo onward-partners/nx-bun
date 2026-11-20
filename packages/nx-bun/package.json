@@ -5,6 +5,18 @@
   "main": "src/index.js",
   "types": "src/index.d.ts",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/onward-partners/nx-bun.git",
+    "directory": "packages/nx-bun"
+  },
+  "homepage": "https://github.com/onward-partners/nx-bun#readme",
+  "bugs": {
+    "url": "https://github.com/onward-partners/nx-bun/issues"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "engines": {
     "node": ">=24"
   },

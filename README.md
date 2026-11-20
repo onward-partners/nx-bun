@@ -16,6 +16,8 @@ Nx plugin that treats [Bun](https://bun.sh) as a first-class toolchain for JS/TS
 
 ## Getting started
 
+The package lives on GitHub Packages, so configure the `@onward-partners` registry first (see [Installing from GitHub Packages](#installing-from-github-packages)).
+
 ```shell
 bun add -D @onward-partners/nx-bun
 nx g @onward-partners/nx-bun:init
@@ -88,16 +90,46 @@ The repository is a Bun workspace; the plugin lives in [`packages/nx-bun`](packa
 
 ## Publishing
 
-The publishable package is the build output, not the source folder:
+The package is published to [GitHub Packages](https://github.com/orgs/onward-partners/packages). The publishable package is the build output (`packages/nx-bun/dist`), not the source folder.
+
+**Release (recommended):** bump `version` in `packages/nx-bun/package.json`, commit, then push a matching tag. The `Release` workflow checks the tag against the version, runs typecheck, build, tests and e2e, and publishes with the built-in `GITHUB_TOKEN`.
+
+```shell
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+**Manual publish:** create a personal access token (classic) with `write:packages`, then:
 
 ```shell
 bun run prepublish:check     # typecheck, unit tests, e2e
 bun run build
 cd packages/nx-bun/dist
-npm publish                  # add --access public for a public scoped package
+npm login --scope=@onward-partners --registry=https://npm.pkg.github.com
+npm publish
 ```
 
 `bun run pack` writes a tarball to `tmp/` so you can inspect the contents first.
+
+### Installing from GitHub Packages
+
+GitHub Packages needs authentication even for reading. Use a token with `read:packages`.
+
+With Bun, add the scope to `bunfig.toml` (the token is read from the environment):
+
+```toml
+[install.scopes]
+"@onward-partners" = { url = "https://npm.pkg.github.com", token = "$GITHUB_TOKEN" }
+```
+
+With npm, pnpm or yarn, use an `.npmrc`:
+
+```ini
+@onward-partners:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+Never commit a literal token.
 
 ## License
 
