@@ -16,7 +16,7 @@ Nx plugin that treats [Bun](https://bun.sh) as a first-class toolchain for JS/TS
 
 ## Getting started
 
-The package lives on GitHub Packages, so configure the `@onward-partners` registry first (see [Installing from GitHub Packages](#installing-from-github-packages)).
+The package is published on [npm](https://www.npmjs.com/package/@onward-partners/nx-bun) and mirrored to GitHub Packages. Projects whose `@onward-partners` scope points at GitHub Packages (see [Installing from GitHub Packages](#installing-from-github-packages)) get it from there.
 
 ```shell
 bun add -D @onward-partners/nx-bun
@@ -123,30 +123,29 @@ The repository is a Bun workspace; the plugin lives in [`packages/nx-bun`](packa
 
 ## Publishing
 
-The package is published to [GitHub Packages](https://github.com/orgs/onward-partners/packages). The publishable package is the build output (`packages/nx-bun/dist`), not the source folder.
+Every release goes to [npm](https://www.npmjs.com/package/@onward-partners/nx-bun) and to [GitHub Packages](https://github.com/orgs/onward-partners/packages). The publishable package is the build output (`packages/nx-bun/dist`), not the source folder.
 
-**Release (recommended):** bump `version` in `packages/nx-bun/package.json`, commit, then push a matching tag. The `Release` workflow checks the tag against the version, runs typecheck, build, tests and e2e, and publishes with the built-in `GITHUB_TOKEN`.
+**Release (recommended):** bump `version` in `packages/nx-bun/package.json`, commit, then push a matching tag. The `Release` workflow checks the tag against the version, runs typecheck, build, tests and e2e, then publishes to both registries:
+
+- **npm** via [trusted publishing](https://docs.npmjs.com/trusted-publishers) (OIDC, no token, with provenance).
+- **GitHub Packages** with the built-in `GITHUB_TOKEN`.
 
 ```shell
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
-**Manual publish:** create a personal access token (classic) with `write:packages`, then:
+**One-time npm setup:**
 
-```shell
-bun run prepublish:check     # typecheck, unit tests, e2e
-bun run build
-cd packages/nx-bun/dist
-npm login --scope=@onward-partners --registry=https://npm.pkg.github.com
-npm publish
-```
+1. Create the `onward-partners` organization on npmjs.com.
+2. Publish the first version manually (trusted publishing can only be configured for an existing package): `bun run prepublish:check && bun run build`, then `cd packages/nx-bun/dist && npm login && npm publish --access public`.
+3. On npmjs.com open the package → *Settings* → *Trusted Publisher* → GitHub Actions: organization `onward-partners`, repository `nx-bun`, workflow `release.yml`. Optionally set the package to *Require two-factor authentication and disallow tokens*.
 
 `bun run pack` writes a tarball to `tmp/` so you can inspect the contents first.
 
 ### Installing from GitHub Packages
 
-GitHub Packages needs authentication even for reading. Use a token with `read:packages`.
+Only needed if you want the GitHub Packages copy instead of npm. GitHub Packages needs authentication even for reading; use a token with `read:packages`.
 
 With Bun, add the scope to `bunfig.toml` (the token is read from the environment):
 

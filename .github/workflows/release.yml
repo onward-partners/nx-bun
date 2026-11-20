@@ -1,7 +1,8 @@
 name: Release
 
-# Publishes @onward-partners/nx-bun to GitHub Packages when a version tag is
-# pushed. Bump "version" in packages/nx-bun/package.json first, then:
+# Publishes @onward-partners/nx-bun to npmjs (trusted publishing via OIDC, no
+# token) and to GitHub Packages when a version tag is pushed. Bump "version" in
+# packages/nx-bun/package.json first, then:
 #   git tag v<version> && git push origin v<version>
 on:
   push:
@@ -10,10 +11,9 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,8 +25,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          registry-url: https://npm.pkg.github.com
-          scope: '@onward-partners'
 
       - name: Tag must match the package version
         run: |
@@ -43,8 +41,60 @@ jobs:
       - name: E2E (fresh Nx workspace, real bun)
         run: node e2e/run-e2e.mjs
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: packages/nx-bun/dist
+          if-no-files-found: error
+
+  publish-npm:
+    name: Publish to npmjs
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing (OIDC) and provenance
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs npm >= 11.5.1.
+      - name: Ensure a recent npm
+        run: npm install -g npm@latest
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      # No NODE_AUTH_TOKEN on purpose: npm exchanges the OIDC token itself.
+      - name: Publish to npmjs
+        working-directory: dist
+        run: npm publish --access public --provenance
+
+  publish-github:
+    name: Publish to GitHub Packages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          scope: '@onward-partners'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
       - name: Publish to GitHub Packages
-        working-directory: packages/nx-bun/dist
+        working-directory: dist
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

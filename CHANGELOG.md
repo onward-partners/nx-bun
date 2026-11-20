@@ -2,6 +2,15 @@
 
 All notable changes to `@onward-partners/nx-bun` are documented here.
 
+## [Unreleased]
+
+### Changed
+
+- Releases are also published to npm, using trusted publishing (OIDC) with
+  provenance. GitHub Packages keeps receiving every release.
+- `publishConfig` no longer pins GitHub Packages; the release workflow picks
+  the registry.
+
 ## [0.0.2] - 2026-11-20
 
 ### Added

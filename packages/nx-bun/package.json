@@ -15,7 +15,7 @@
     "url": "https://github.com/onward-partners/nx-bun/issues"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "access": "public"
   },
   "engines": {
     "node": ">=24"
