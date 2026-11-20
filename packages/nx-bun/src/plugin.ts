@@ -13,6 +13,7 @@ export interface BunPluginOptions {
   testTargetName?: TargetName;
   fmtTargetName?: TargetName;
   fmtCheckTargetName?: TargetName;
+  checkTargetName?: TargetName;
   buildTargetName?: TargetName;
   serveTargetName?: TargetName;
   startTargetName?: TargetName;
@@ -65,6 +66,7 @@ export const createNodesV2: CreateNodesV2<BunPluginOptions> = [
           test: name(options?.testTargetName, 'bun-test'),
           fmt: name(options?.fmtTargetName, 'bun-fmt'),
           fmtCheck: name(options?.fmtCheckTargetName, 'bun-fmt-check'),
+          check: name(options?.checkTargetName, 'bun-check'),
           build: name(options?.buildTargetName, 'bun-build'),
           serve: name(options?.serveTargetName, 'bun-serve'),
           start: name(options?.startTargetName, 'bun-start'),
@@ -105,6 +107,17 @@ export const createNodesV2: CreateNodesV2<BunPluginOptions> = [
             inputs: ['default', BUN_VERSION],
             options: { check: true },
             metadata: meta('Check formatting with bun fmt --check'),
+          };
+        }
+
+        // `bun check` needs a tsconfig.json to know what to type check.
+        if (names.check && existsSync(abs('tsconfig.json'))) {
+          targets[names.check] = {
+            executor: `${PLUGIN}:check`,
+            cache: true,
+            inputs: ['default', '^default', BUN_VERSION],
+            options: {},
+            metadata: meta('Type check with bun check'),
           };
         }
 

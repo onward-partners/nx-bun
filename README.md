@@ -46,6 +46,7 @@ A project is a Bun project when `bunfig.toml` sits next to a `package.json` or `
 | -------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `bun-test`                 | test files exist                               | `bun test`                                                                                    |
 | `bun-fmt`, `bun-fmt-check` | always                                         | `bun fmt`, `bun fmt --check`                                                                  |
+| `bun-check`                | `tsconfig.json` exists                         | `bun check` (type check)                                                                      |
 | `bun-build`                | entry found (`src/index.ts`, `src/main.ts`, …) | `bun build`; publishable projects also get `dts`, `generatePackageJson`, `packages: external` |
 | `bun-serve`                | entry found                                    | runs the **source** with `bun --watch` (continuous)                                           |
 | `bun-start`                | entry found                                    | builds, then runs the **compiled output**                                                     |
@@ -56,7 +57,7 @@ Plugin options:
 
 | Option                                                                                                                                   | Effect                                                                                                    |
 | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `buildTargetName`, `testTargetName`, `serveTargetName`, `startTargetName`, `fmtTargetName`, `fmtCheckTargetName`, `pruneLockfileTargetName` | Rename a target, or set it to `false` to not infer it (for example `fmtTargetName: false` if you use Prettier). |
+| `buildTargetName`, `testTargetName`, `serveTargetName`, `startTargetName`, `fmtTargetName`, `fmtCheckTargetName`, `checkTargetName`, `pruneLockfileTargetName` | Rename a target, or set it to `false` to not infer it (for example `fmtTargetName: false` if you use Prettier). |
 | `releasePublish: false`                                                                                                                  | Do not infer `nx-release-publish`.                                                                        |
 | `include`, `exclude`                                                                                                                     | Globs (`*`, `**`, `?`) on project roots. Only matching projects (`include`) / never matching ones (`exclude`) get targets. |
 | `rootProject`                                                                                                                            | Also infer targets for a `bunfig.toml` in the workspace root. Default `false`.                            |
@@ -81,6 +82,7 @@ Plugin options:
 - **`build`** – `entryPoints`, `outputPath` / `outfile` (`outfile` wins), `target`, `format`, `minify`, `sourcemap`, `splitting`, `compile`, `packages`, `external`, `define`, `dts`, `generatePackageJson`, `assets`, `clean` (empty the output first) and `plugins` (see below).
 - **`test`** – `testFiles`, `timeout`, `bail`, `coverage`, `coverageReporter`, `updateSnapshots`, `watch`, `testNamePattern`, `reporter`, `passWithNoTests`, `concurrent`, `randomize`, `only`.
 - **`fmt`** – `files`, `check`, `printWidth`, `useTabs`, `noSemi`, `singleQuote`, `changed`.
+- **`check`** – `files`, `project`, `build`, `pretty`, `all`, `threads`, `timing`.
 - **`release-publish`** – `bun publish` for `nx release`. `@nx/js:release-publish` passes `--json`, which Bun rejects, so the inferred `nx-release-publish` target uses this executor. Options: `packageRoot`, `registry`, `tag`, `access`, `otp`, `dryRun`, `tolerateRepublish` (default `true`). Bun asks for credentials even with `dryRun`.
 - **`prune-lockfile`** – Bun replacement for `@nx/js:prune-lockfile`, which does not support Bun. Pins dependencies to the versions Nx read from the workspace `bun.lock`, then runs `bun install --lockfile-only`. Useful for Docker builds.
 

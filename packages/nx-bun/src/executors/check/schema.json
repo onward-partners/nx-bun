@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Bun check executor",
+  "description": "Type check a TypeScript project with `bun check`.",
+  "type": "object",
+  "properties": {
+    "files": {
+      "type": "array",
+      "description": "Files or directories to check (with everything they import). Defaults to the whole project.",
+      "items": { "type": "string" }
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory. Defaults to the project root."
+    },
+    "project": {
+      "type": "string",
+      "description": "Path to a tsconfig.json or its directory (`--project`)."
+    },
+    "build": {
+      "type": "boolean",
+      "description": "Also check referenced projects, like `tsc -b` (`--build`).",
+      "default": false
+    },
+    "pretty": {
+      "type": "boolean",
+      "description": "Show source code around each error (`--pretty` / `--no-pretty`). Defaults to Bun's choice."
+    },
+    "all": {
+      "type": "boolean",
+      "description": "Show every error instead of grouping above 50.",
+      "default": false
+    },
+    "threads": {
+      "type": "number",
+      "description": "Number of threads (default: one per CPU core)."
+    },
+    "timing": { "type": "boolean", "default": false },
+    "noScript": {
+      "type": "boolean",
+      "description": "Run the type checker even if the project has a `check` script.",
+      "default": false
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "args": {
+      "type": "array",
+      "description": "Additional raw flags for `bun check`, e.g. compiler options.",
+      "items": { "type": "string" }
+    }
+  }
+}

@@ -70,6 +70,19 @@ describe('createNodesV2', () => {
     expect(Object.keys(p.targets).sort()).toEqual(['bun-fmt', 'bun-fmt-check']);
   });
 
+  test('tsconfig.json adds a cached bun-check target', async () => {
+    write('libs/t/bunfig.toml');
+    write('libs/t/package.json', JSON.stringify({ name: 't' }));
+    write('libs/t/tsconfig.json', '{}');
+    const { 'libs/t': p } = await infer(['libs/t/bunfig.toml']);
+    expect(p.targets['bun-check']).toMatchObject({
+      executor: '@onward-partners/nx-bun:check',
+      cache: true,
+    });
+    const off = await infer(['libs/t/bunfig.toml'], { checkTargetName: false });
+    expect(off['libs/t'].targets['bun-check']).toBeUndefined();
+  });
+
   test('publishable library builds a package and gets a release target', async () => {
     write('libs/pub/bunfig.toml');
     write(

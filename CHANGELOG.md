@@ -4,6 +4,15 @@ All notable changes to `@onward-partners/nx-bun` are documented here.
 
 ## [Unreleased]
 
+## [0.0.5] - 2026-11-20
+
+### Added
+
+- `check` executor: type checks a project with `bun check`. Options: `files`,
+  `project`, `build`, `pretty`, `all`, `threads`, `timing`.
+- Inferred `bun-check` target for projects with a `tsconfig.json`; rename or
+  disable it with the `checkTargetName` plugin option.
+
 ### Changed
 
 - Releases are also published to npm, using trusted publishing (OIDC) with
