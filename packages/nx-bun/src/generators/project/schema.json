@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "NxBunProject",
+  "cli": "nx",
+  "title": "Add Bun to a project",
+  "description": "Add Bun configuration (bunfig.toml) to an existing project so run, build, test and fmt targets are inferred.",
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "The project to configure.",
+      "$default": { "$source": "projectName" },
+      "x-prompt": "Which project should use Bun?"
+    },
+    "skipFormat": { "type": "boolean", "default": false },
+    "skipPackageJson": { "type": "boolean", "default": false }
+  },
+  "required": ["project"]
+}

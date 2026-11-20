@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "NxBunApplication",
+  "cli": "nx",
+  "title": "Bun application",
+  "description": "Create an application that runs, builds and tests with Bun.",
+  "type": "object",
+  "examples": [
+    {
+      "command": "nx g @onward-partners/nx-bun:application apps/my-app",
+      "description": "Create apps/my-app"
+    }
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the application.",
+      "$default": { "$source": "argv", "index": 0 },
+      "x-prompt": "What name would you like to use for the application?"
+    },
+    "directory": {
+      "type": "string",
+      "description": "Directory of the application. Defaults to apps/<name>.",
+      "alias": "dir"
+    },
+    "tags": { "type": "string", "description": "Comma-separated tags." },
+    "unitTestRunner": {
+      "type": "string",
+      "enum": ["bun", "none"],
+      "default": "bun",
+      "description": "Test runner. `bun` adds a sample bun:test spec."
+    },
+    "useProjectJson": {
+      "type": "boolean",
+      "default": false,
+      "description": "Create a project.json. Targets are inferred from bunfig.toml either way."
+    },
+    "skipFormat": { "type": "boolean", "default": false },
+    "skipPackageJson": { "type": "boolean", "default": false }
+  },
+  "required": ["name"]
+}

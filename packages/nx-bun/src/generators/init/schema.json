@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "NxBunInit",
+  "cli": "nx",
+  "title": "Initialize @onward-partners/nx-bun",
+  "description": "Register the plugin in nx.json and add Bun's types.",
+  "type": "object",
+  "properties": {
+    "skipFormat": {
+      "type": "boolean",
+      "default": false,
+      "description": "Skip formatting files."
+    },
+    "skipPackageJson": {
+      "type": "boolean",
+      "default": false,
+      "description": "Do not add dependencies to package.json."
+    },
+    "setPackageManager": {
+      "type": "boolean",
+      "default": false,
+      "description": "Set `cli.packageManager` to bun in nx.json."
+    }
+  },
+  "required": []
+}

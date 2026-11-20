@@ -1,0 +1,20 @@
+{
+  "name": "<%= importPath %>",
+  "version": "0.0.1",
+  "type": "module",
+<% if (publishable) { %>  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  },
+  "files": ["index.js", "index.d.ts"]
+<% } else { %>  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+<% } %>}

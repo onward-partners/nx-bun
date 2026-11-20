@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Bun fmt executor",
+  "description": "Format files with `bun fmt`, or verify formatting with `check`.",
+  "type": "object",
+  "properties": {
+    "files": {
+      "type": "array",
+      "description": "Files, directories or patterns relative to cwd. Defaults to the project root.",
+      "items": { "type": "string" }
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory. Defaults to the project root."
+    },
+    "check": {
+      "type": "boolean",
+      "description": "Do not write; fail if a file needs formatting (`--check`).",
+      "default": false
+    },
+    "printWidth": { "type": "number" },
+    "useTabs": { "type": "boolean", "default": false },
+    "noSemi": { "type": "boolean", "default": false },
+    "singleQuote": { "type": "boolean", "default": false },
+    "changed": {
+      "oneOf": [{ "type": "boolean" }, { "type": "string" }],
+      "description": "Only files that differ from a branch or commit."
+    },
+    "noScript": {
+      "type": "boolean",
+      "description": "Run the formatter even if the project has an `fmt` script.",
+      "default": false
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "args": {
+      "type": "array",
+      "description": "Additional raw flags for `bun fmt`.",
+      "items": { "type": "string" }
+    }
+  }
+}

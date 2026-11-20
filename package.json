@@ -1,0 +1,22 @@
+{
+  "name": "@onward-partners/nx-bun-plugins",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Nx plugins for Bun. Contains @onward-partners/nx-bun.",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "bun run --filter @onward-partners/nx-bun build",
+    "typecheck": "bun run --filter @onward-partners/nx-bun typecheck",
+    "test": "bun run --filter @onward-partners/nx-bun test",
+    "e2e": "bun run build && node e2e/run-e2e.mjs",
+    "pack": "bun run build && npm pack ./packages/nx-bun/dist --pack-destination ./tmp",
+    "prepublish:check": "bun run typecheck && bun run test && bun run e2e"
+  },
+  "engines": {
+    "bun": ">=1.4.0",
+    "node": ">=24"
+  }
+}

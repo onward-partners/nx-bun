@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "NxBunLibrary",
+  "cli": "nx",
+  "title": "Bun library",
+  "description": "Create a library that builds and tests with Bun.",
+  "type": "object",
+  "examples": [
+    {
+      "command": "nx g @onward-partners/nx-bun:library libs/util",
+      "description": "Create libs/util"
+    },
+    {
+      "command": "nx g @onward-partners/nx-bun:library libs/ui --publishable --importPath=@acme/ui",
+      "description": "Create a publishable library"
+    }
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the library.",
+      "$default": { "$source": "argv", "index": 0 },
+      "x-prompt": "What name would you like to use for the library?"
+    },
+    "directory": {
+      "type": "string",
+      "description": "Directory of the library. Defaults to libs/<name>.",
+      "alias": "dir"
+    },
+    "importPath": {
+      "type": "string",
+      "description": "Import path used in tsconfig.base.json and as package name."
+    },
+    "tags": { "type": "string", "description": "Comma-separated tags." },
+    "publishable": {
+      "type": "boolean",
+      "default": false,
+      "description": "Make the library publishable: package.json points to the build output and an nx-release-publish target is inferred."
+    },
+    "unitTestRunner": {
+      "type": "string",
+      "enum": ["bun", "none"],
+      "default": "bun"
+    },
+    "useProjectJson": { "type": "boolean", "default": false },
+    "skipFormat": { "type": "boolean", "default": false },
+    "skipPackageJson": { "type": "boolean", "default": false }
+  },
+  "required": ["name"]
+}

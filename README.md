@@ -1,0 +1,104 @@
+# @onward-partners/nx-bun
+
+<div align="center">
+
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%E2%89%A524-339933.svg?style=flat-square)](<>)
+[![Bun](https://img.shields.io/badge/bun-%E2%89%A51.4-f9a03c.svg?style=flat-square)](<>)
+
+</div>
+
+Nx plugin that treats [Bun](https://bun.sh) as a first-class toolchain for JS/TS apps and libraries: generators, inferred targets, and executors for `bun run`, `bun build`, `bun test` and `bun fmt`, plus a Bun-aware `prune-lockfile`.
+
+- Requires **Nx 24.x**, **Node 24+** and **Bun 1.4+**.
+- Nx itself keeps running on Node; the plugin runs your projects with Bun.
+- Tested on Windows and Linux. macOS is covered by the CI matrix.
+
+## Getting started
+
+```shell
+bun add -D @onward-partners/nx-bun
+nx g @onward-partners/nx-bun:init
+nx g @onward-partners/nx-bun:application apps/api
+nx g @onward-partners/nx-bun:library libs/util --importPath=@acme/util
+
+nx run api:bun-test
+nx run api:bun-serve      # run the TypeScript source with bun --watch
+nx run api:bun-start      # build, then run the compiled output
+```
+
+## Generators
+
+| Generator                   | Purpose                                                                                                                       |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `init`                      | Registers the plugin in `nx.json`, adds `@types/bun`. `--setPackageManager` sets `cli.packageManager: bun`.                   |
+| `application` (`app`)       | `apps/<name>` with `package.json`, `bunfig.toml`, `tsconfig.json`, `src/main.ts` and a `bun:test` spec.                       |
+| `library` (`lib`)           | `libs/<name>`, source-linked via a `tsconfig.base.json` path. `--publishable` makes `package.json` point at the build output. |
+| `project` (`configuration`) | Adds `bunfig.toml` to an existing project so the targets below are inferred.                                                  |
+
+## Inferred targets
+
+A project is a Bun project when `bunfig.toml` sits next to a `package.json` or `project.json`.
+
+| Target                     | Created when                                   | What it does                                                                                  |
+| -------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `bun-test`                 | test files exist                               | `bun test`                                                                                    |
+| `bun-fmt`, `bun-fmt-check` | always                                         | `bun fmt`, `bun fmt --check`                                                                  |
+| `bun-build`                | entry found (`src/index.ts`, `src/main.ts`, …) | `bun build`; publishable projects also get `dts`, `generatePackageJson`, `packages: external` |
+| `bun-serve`                | entry found                                    | runs the **source** with `bun --watch` (continuous)                                           |
+| `bun-start`                | entry found                                    | builds, then runs the **compiled output**                                                     |
+| `bun-prune-lockfile`       | private project with entry                     | `package.json` + `bun.lock` with only the needed packages                                     |
+| `nx-release-publish`       | non-private project with entry                 | `@nx/js:release-publish` on `dist/<root>` (uses `bun publish`)                                |
+
+Target names can be changed with plugin options (`buildTargetName`, `testTargetName`, `serveTargetName`, `startTargetName`, `fmtTargetName`, `fmtCheckTargetName`, `pruneLockfileTargetName`). `releasePublish: false` disables the release target.
+
+```jsonc
+// nx.json
+{
+  "plugins": [
+    {
+      "plugin": "@onward-partners/nx-bun",
+      "options": { "buildTargetName": "build" },
+    },
+  ],
+}
+```
+
+## Executors
+
+- **`run`** – `main` runs TypeScript/JavaScript source directly; `buildTarget` runs the compiled output of a build target (`runtime: bun | node`; `--compile` binaries start directly). Also `watch`, `hot`, `args`, `env`.
+- **`build`** – `entryPoints`, `outputPath` / `outfile` (`outfile` wins), `target`, `format`, `minify`, `sourcemap`, `splitting`, `compile`, `packages`, `external`, `define`, `dts`, `generatePackageJson`, `assets`.
+- **`test`** – `testFiles`, `timeout`, `bail`, `coverage`, `coverageReporter`, `updateSnapshots`, `watch`, `testNamePattern`, `reporter`, `passWithNoTests`, `concurrent`, `randomize`, `only`.
+- **`fmt`** – `files`, `check`, `printWidth`, `useTabs`, `noSemi`, `singleQuote`, `changed`.
+- **`prune-lockfile`** – Bun replacement for `@nx/js:prune-lockfile`, which does not support Bun. Pins dependencies to the versions Nx read from the workspace `bun.lock`, then runs `bun install --lockfile-only`. Useful for Docker builds.
+
+Every executor accepts `env` and `args` (raw flags). Set `BUN_BIN` to use a specific Bun binary.
+
+## Development
+
+```shell
+bun install
+bun run typecheck
+bun run build      # compiles packages/nx-bun into packages/nx-bun/dist
+bun run test       # unit tests (bun test)
+bun run e2e        # fresh Nx workspace with the built plugin and real bun
+```
+
+The repository is a Bun workspace; the plugin lives in [`packages/nx-bun`](packages/nx-bun).
+
+## Publishing
+
+The publishable package is the build output, not the source folder:
+
+```shell
+bun run prepublish:check     # typecheck, unit tests, e2e
+bun run build
+cd packages/nx-bun/dist
+npm publish                  # add --access public for a public scoped package
+```
+
+`bun run pack` writes a tarball to `tmp/` so you can inspect the contents first.
+
+## License
+
+[MIT](LICENSE)

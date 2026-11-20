@@ -1,0 +1,6 @@
+import { expect, test } from 'bun:test';
+import { hello } from './main';
+
+test('hello', () => {
+  expect(hello('Bun')).toBe('Hello Bun from <%= projectName %>');
+});

@@ -1,0 +1,14 @@
+node_modules
+dist
+tmp
+coverage
+.nx
+*.log
+*.tgz
+
+# editors and local tooling
+.idea/
+.vscode/*
+!.vscode/extensions.json
+/graft/
+.ignore

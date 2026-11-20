@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Bun prune-lockfile executor",
+  "description": "Create a package.json and bun.lock containing only the packages a project needs (for Docker and deployments).",
+  "type": "object",
+  "properties": {
+    "outputPath": {
+      "type": "string",
+      "description": "Directory that receives package.json and bun.lock. Defaults to the output of `buildTarget`.",
+      "x-completion-type": "directory"
+    },
+    "buildTarget": {
+      "type": "string",
+      "description": "Build target used to find the output directory. Defaults to `<project>:bun-build`.",
+      "x-completion-type": "target"
+    },
+    "exactVersions": {
+      "type": "boolean",
+      "default": true,
+      "description": "Pin dependencies to the exact versions from the workspace bun.lock."
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    }
+  }
+}

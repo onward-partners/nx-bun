@@ -1,0 +1,7 @@
+export function hello(name = 'world'): string {
+  return `Hello ${name} from <%= projectName %>`;
+}
+
+if (import.meta.main) {
+  console.log(hello(process.argv[2]));
+}

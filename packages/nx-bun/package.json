@@ -1,0 +1,46 @@
+{
+  "name": "@onward-partners/nx-bun",
+  "version": "0.0.1",
+  "description": "Nx plugin that runs, builds, tests and formats JS/TS projects with Bun",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "keywords": [
+    "nx",
+    "bun",
+    "plugin",
+    "monorepo"
+  ],
+  "executors": "./executors.json",
+  "generators": "./generators.json",
+  "dependencies": {
+    "tslib": "^2.6.0"
+  },
+  "peerDependencies": {
+    "@nx/devkit": ">=24.0.0 <25.0.0",
+    "@nx/js": ">=24.0.0 <25.0.0",
+    "typescript": ">=5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@nx/js": {
+      "optional": true
+    },
+    "typescript": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@nx/devkit": "24.0.6",
+    "@types/bun": "^1.4.0",
+    "@types/node": "^26.0.0",
+    "typescript": "6.0.3"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.js",
+    "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

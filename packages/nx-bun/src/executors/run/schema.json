@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Bun run executor",
+  "description": "Run a project with Bun: either the TypeScript/JavaScript source directly (`main`) or the compiled output of a build target (`buildTarget`).",
+  "type": "object",
+  "properties": {
+    "main": {
+      "type": "string",
+      "description": "Run this source entry file directly with `bun run` (no build step). Relative to the workspace root (or cwd).",
+      "x-completion-type": "file"
+    },
+    "buildTarget": {
+      "type": "string",
+      "description": "Run the compiled output of this `@onward-partners/nx-bun:build` target (`project:target[:configuration]`). Add the target to `dependsOn` so it is built first.",
+      "x-completion-type": "target"
+    },
+    "runtime": {
+      "type": "string",
+      "enum": ["bun", "node"],
+      "default": "bun",
+      "description": "Runtime for compiled JS output. Executables built with `compile` are started directly."
+    },
+    "outputFile": {
+      "type": "string",
+      "description": "Override the compiled file to start when it cannot be derived from the build target."
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory. Defaults to the workspace root."
+    },
+    "watch": {
+      "type": "boolean",
+      "description": "Restart the process when imported files change (`bun --watch`).",
+      "default": false
+    },
+    "hot": {
+      "type": "boolean",
+      "description": "Hot reload without restarting (`bun --hot`). Takes precedence over `watch`.",
+      "default": false
+    },
+    "env": {
+      "type": "object",
+      "description": "Extra environment variables.",
+      "additionalProperties": { "type": "string" }
+    },
+    "args": {
+      "type": "array",
+      "description": "Arguments passed to the program.",
+      "items": { "type": "string" }
+    },
+    "bunArgs": {
+      "type": "array",
+      "description": "Additional flags passed to bun before `run`.",
+      "items": { "type": "string" }
+    }
+  },
+  "oneOf": [{ "required": ["main"] }, { "required": ["buildTarget"] }]
+}

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Bun test executor",
+  "description": "Run tests with `bun test`.",
+  "type": "object",
+  "properties": {
+    "testFiles": {
+      "type": "array",
+      "description": "File or name filters (positional patterns of `bun test`).",
+      "items": { "type": "string" }
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory. Defaults to the project root."
+    },
+    "timeout": {
+      "type": "number",
+      "description": "Per-test timeout in milliseconds (Bun default 5000)."
+    },
+    "bail": {
+      "oneOf": [{ "type": "boolean" }, { "type": "number" }],
+      "description": "Stop after N failures (true = 1)."
+    },
+    "coverage": { "type": "boolean", "default": false },
+    "coverageReporter": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["text", "lcov"] }
+    },
+    "coverageDir": { "type": "string" },
+    "updateSnapshots": { "type": "boolean", "default": false },
+    "watch": { "type": "boolean", "default": false },
+    "testNamePattern": {
+      "type": "string",
+      "description": "Run only tests whose name matches this regex."
+    },
+    "reporter": { "type": "string", "enum": ["junit", "dots"] },
+    "reporterOutfile": {
+      "type": "string",
+      "description": "Required with `reporter: junit`."
+    },
+    "passWithNoTests": { "type": "boolean", "default": false },
+    "concurrent": { "type": "boolean", "default": false },
+    "randomize": { "type": "boolean", "default": false },
+    "only": { "type": "boolean", "default": false },
+    "env": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "args": {
+      "type": "array",
+      "description": "Additional raw flags for `bun test`.",
+      "items": { "type": "string" }
+    }
+  }
+}

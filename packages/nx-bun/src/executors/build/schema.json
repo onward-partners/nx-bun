@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Bun build executor",
+  "description": "Bundle entry points with `bun build`.",
+  "type": "object",
+  "properties": {
+    "entryPoints": {
+      "type": "array",
+      "description": "Entry files, relative to the workspace root (or cwd).",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "outputPath": {
+      "type": "string",
+      "description": "Output directory (`--outdir`).",
+      "x-completion-type": "directory"
+    },
+    "outfile": {
+      "type": "string",
+      "description": "Output file (`--outfile`). Takes precedence over `outputPath`. Use with `compile` for a single executable."
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory. Defaults to the workspace root."
+    },
+    "target": {
+      "type": "string",
+      "enum": ["browser", "bun", "node"],
+      "description": "Runtime target."
+    },
+    "format": {
+      "type": "string",
+      "enum": ["esm", "cjs", "iife"],
+      "description": "Module format."
+    },
+    "minify": { "type": "boolean", "default": false },
+    "sourcemap": {
+      "type": "string",
+      "enum": ["none", "linked", "inline", "external"]
+    },
+    "splitting": { "type": "boolean", "default": false },
+    "compile": {
+      "type": "boolean",
+      "description": "Compile into a standalone executable (`--compile`).",
+      "default": false
+    },
+    "packages": {
+      "type": "string",
+      "enum": ["bundle", "external"],
+      "description": "Bundle dependencies or keep them external."
+    },
+    "external": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "define": {
+      "type": "array",
+      "description": "Compile-time constants, e.g. `process.env.NODE_ENV=\"production\"`.",
+      "items": { "type": "string" }
+    },
+    "generatePackageJson": {
+      "type": "boolean",
+      "default": false,
+      "description": "Write a package.json next to the output. Dependencies are taken from the project graph (all with `packages: external`, otherwise only those listed in `external`)."
+    },
+    "dts": {
+      "type": "boolean",
+      "default": false,
+      "description": "Emit .d.ts files with tsc next to the output."
+    },
+    "tsConfig": {
+      "type": "string",
+      "description": "tsconfig for `dts`. Defaults to <projectRoot>/tsconfig.json."
+    },
+    "assets": {
+      "type": "array",
+      "description": "Files or folders copied into the output directory (relative to the workspace root).",
+      "items": { "type": "string" }
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "args": {
+      "type": "array",
+      "description": "Additional raw flags for `bun build`.",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["entryPoints"]
+}

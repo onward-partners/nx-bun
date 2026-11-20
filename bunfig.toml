@@ -1,0 +1,7 @@
+[fmt]
+singleQuote = true
+printWidth = 80
+arrowParens = "avoid"
+trailingComma = "all"
+semi = true
+ignorePatterns = ["dist", "**/node_modules"]
